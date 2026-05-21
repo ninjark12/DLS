@@ -1,7 +1,6 @@
-# Tauri + Angular
+# Dynamic Layer Switcher
 
-This template should help get you started developing with Tauri and Angular.
+A Tauri app written to be a way to automatically switch keyboard layers between applications so that you have certain keybinds for the active application.
+Angular Frontend and Rust backend.
 
-## Recommended IDE Setup
 
-[VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) + [Angular Language Service](https://marketplace.visualstudio.com/items?itemName=Angular.ng-template).
