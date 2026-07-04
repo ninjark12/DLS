@@ -50,7 +50,7 @@ pub fn send_layer(
                 .open(current_keyboard_vid, current_keyboard_pid)
                 .map_err(|e| e.to_string())?;
             let mut packet = [0u8; 32];
-            packet[0] = 0x01;
+            packet[0] = 0xE0; // DLS_CMD_SET_LAYER — outside Via's reserved range (0x01-0x35)
             packet[1] = layer_number;
             device.write(&packet).map_err(|e| e.to_string())?;
             Ok(())
