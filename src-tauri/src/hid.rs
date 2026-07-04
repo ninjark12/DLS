@@ -4,7 +4,7 @@
 //  includes hid, vid, product desc
 // send the keyboard info to switcher
 //
-use hidapi::{DeviceInfo, HidApi};
+use hidapi::HidApi;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

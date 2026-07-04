@@ -10,10 +10,10 @@ use windows::Win32::{
         PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
     },
     UI::{
-        Accessibility::{SetWinEventHook, HWINEVENTHOOK},
+        Accessibility::{SetWinEventHook, UnhookWinEvent, HWINEVENTHOOK},
         WindowsAndMessaging::{
-            DispatchMessageW, GetMessage, GetWindowThreadProcessId,
-            PostThreadMessageW, TranslateMessage, UnhookWinEvent,
+            DispatchMessageW, GetMessageW, GetWindowThreadProcessId,
+            PostThreadMessageW, TranslateMessage,
             EVENT_SYSTEM_FOREGROUND, MSG, WINEVENT_OUTOFCONTEXT, WM_APP,
             WM_QUIT,
         },
@@ -44,6 +44,7 @@ unsafe extern "system" fn hook_callback(
 ) {
     let thread_id = THREAD_ID.with(|tid| tid.get());
     let _ = PostThreadMessageW(thread_id, WM_APP, WPARAM(hwnd.0 as usize), LPARAM(0));
+    // hwnd.0 is *mut c_void; casting to usize gives us the address to carry through wParam
 }
 
 fn resolve_exe(hwnd: HWND) -> Option<String> {
@@ -91,13 +92,13 @@ pub fn run(
 
     let mut msg = MSG::default();
     loop {
-        let result = unsafe { GetMessage(&mut msg, None, 0, 0) };
+        let result = unsafe { GetMessageW(&mut msg, None, 0, 0) };
         if result.0 <= 0 {
             break;
         }
         if msg.message == WM_APP {
-            let hwnd = HWND(msg.wParam.0 as isize);
-            if hwnd.0 == 0 {
+            let hwnd = HWND(msg.wParam.0 as *mut core::ffi::c_void);
+            if hwnd.0.is_null() {
                 continue;
             }
             if let Some(exe) = resolve_exe(hwnd) {
@@ -128,7 +129,7 @@ pub fn run(
         }
     }
 
-    if hook.0 != 0 {
+    if !hook.0.is_null() {
         unsafe { UnhookWinEvent(hook) };
     }
 }
