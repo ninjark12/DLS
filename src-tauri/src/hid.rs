@@ -9,12 +9,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyboardInfo {
-    pid: u16,
-    vid: u16,
-    product_string: String,
+    pub pid: u16,
+    pub vid: u16,
+    pub product_string: String,
 }
 
-fn list_keyboards() -> Vec<KeyboardInfo> {
+pub fn list_keyboards() -> Vec<KeyboardInfo> {
     let mut keyboards: Vec<KeyboardInfo> = Vec::new();
     let api = HidApi::new();
     match api {

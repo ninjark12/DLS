@@ -41,7 +41,7 @@ fn read_config(path: &PathBuf) -> Result<Config, String> {
     serde_json::from_str(&config_data).map_err(|e| e.to_string())
 }
 
-fn write_config(config: &Config) -> Result<(), String> {
+pub fn write_config(config: &Config) -> Result<(), String> {
     let write_string = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     std::fs::write(config_path(), &write_string).map_err(|e| e.to_string())
 }
