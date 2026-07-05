@@ -1,48 +1,52 @@
-<main class="app">
+<div class="app">
 
   <header class="app-header">
     <h1>Dynamic Layer Switcher</h1>
+    <p class="app-sub">QMK focus-based layer switching</p>
   </header>
 
-  @if (saveError) {
-    <div class="error-banner">{{ saveError }}</div>
+  @if (error) {
+    <div class="banner-error">{{ error }}</div>
   }
 
-  <!-- ── Keyboard ──────────────────────────────── -->
+  <!-- ── Keyboard ─────────────────────────────── -->
   <section class="card">
-    <div class="card-header">
-      <h2>Keyboard</h2>
-      <button class="btn-ghost" (click)="loadDevices()">Refresh</button>
+    <div class="card-head">
+      <span class="card-label">Keyboard</span>
+      <button class="btn-ghost" (click)="loadDevices()">↻ Refresh</button>
     </div>
 
-    <div class="device-list">
+    <div class="keyboard-list">
       @if (devices.length === 0) {
-        <p class="empty">No QMK keyboards detected. Plug in your keyboard and click Refresh.</p>
+        <div class="empty-state">
+          <span class="empty-icon">⌨</span>
+          <span class="empty-text">No QMK keyboards detected</span>
+          <span class="empty-sub">Plug in your keyboard and click Refresh</span>
+        </div>
       }
       @for (device of devices; track device.pid) {
         <button
-          class="device-row"
+          class="keyboard-item"
           [class.selected]="isSelected(device)"
           (click)="selectDevice(device)"
         >
-          <span class="device-name">{{ device.product_string }}</span>
-          <span class="device-ids">VID {{ toHex(device.vid) }} · PID {{ toHex(device.pid) }}</span>
+          <span class="keyboard-name">{{ device.product_string }}</span>
+          <span class="keyboard-ids">{{ toHex(device.vid) }} · {{ toHex(device.pid) }}</span>
         </button>
       }
     </div>
   </section>
 
-  <!-- ── Rules ─────────────────────────────────── -->
+  <!-- ── Rules ──────────────────────────────────── -->
   <section class="card">
-    <div class="card-header">
-      <h2>Rules</h2>
-      <div class="default-layer">
-        <label for="default-layer">Default layer</label>
+    <div class="card-head">
+      <span class="card-label">App Rules</span>
+      <div class="default-layer-row">
+        <label class="field-label" for="default-layer">Default layer</label>
         <input
           id="default-layer"
-          type="number"
-          min="0"
-          max="31"
+          class="input-layer"
+          type="number" min="0" max="31"
           [(ngModel)]="config.default_layer"
           (change)="saveConfig()"
         />
@@ -61,67 +65,64 @@
       <tbody>
         @if (config.rules.length === 0) {
           <tr>
-            <td colspan="4" class="empty">No rules yet — add one below.</td>
+            <td colspan="4" class="table-empty">No rules yet — add one below.</td>
           </tr>
         }
         @for (rule of config.rules; track $index) {
-          <tr>
-            <td><input [(ngModel)]="rule.label" placeholder="Label" /></td>
-            <td><input [(ngModel)]="rule.exe" placeholder="app.exe" /></td>
-            <td><input type="number" min="0" max="31" [(ngModel)]="rule.layer" /></td>
-            <td>
-              <button class="btn-icon btn-danger" (click)="removeRule($index)" title="Delete">×</button>
+          <tr class="rule-row">
+            <td><input class="input-cell" [(ngModel)]="rule.label"  placeholder="Label"   /></td>
+            <td><input class="input-cell" [(ngModel)]="rule.exe"    placeholder="app.exe" /></td>
+            <td><input class="input-cell input-layer" type="number" min="0" max="31" [(ngModel)]="rule.layer" /></td>
+            <td class="col-delete">
+              <button class="btn-delete" (click)="removeRule($index)" title="Delete rule">×</button>
             </td>
           </tr>
         }
       </tbody>
     </table>
 
-    <div class="add-rule">
-      <input class="add-label" [(ngModel)]="newRule.label" placeholder="Label" />
-      <input class="add-exe"   [(ngModel)]="newRule.exe"   placeholder="app.exe" />
-      <input type="number" min="0" max="31" [(ngModel)]="newRule.layer" />
-      <button (click)="addRule()">+ Add</button>
+    <div class="add-row">
+      <input class="input-cell add-label" [(ngModel)]="newRule.label" placeholder="Label"   />
+      <input class="input-cell add-exe"   [(ngModel)]="newRule.exe"   placeholder="app.exe" />
+      <input class="input-cell input-layer" type="number" min="0" max="31" [(ngModel)]="newRule.layer" />
+      <button class="btn-add" (click)="addRule()">+ Add</button>
     </div>
 
-    <div class="card-footer">
-      <button (click)="saveConfig()">Save Rules</button>
-    </div>
+    @if (config.rules.length > 0) {
+      <div class="card-foot">
+        <button class="btn-primary" (click)="saveConfig()">Save Rules</button>
+      </div>
+    }
   </section>
 
   <!-- ── Status ─────────────────────────────────── -->
-  <section class="card">
-    <div class="card-header">
-      <h2>Status</h2>
-      <div class="status-indicator">
-        <span class="dot" [class.active]="running"></span>
-        <span>{{ running ? "Running" : "Stopped" }}</span>
+  <section class="card card-status" [class.is-running]="running">
+    <div class="status-top">
+      <div class="status-badge" [class.active]="running">
+        <span class="status-dot"></span>
+        {{ running ? "Active" : "Inactive" }}
       </div>
+      <button
+        [class]="running ? 'btn-danger' : 'btn-primary'"
+        [disabled]="!running && config.vendor_id === 0"
+        (click)="running ? stopSwitcher() : startSwitcher()"
+      >
+        {{ running ? "Stop" : "Start" }}
+      </button>
     </div>
 
-    <div class="status-body">
-      @if (status) {
-        <div class="status-detail">
-          <span class="status-exe">{{ status.current_exe }}</span>
-          <span class="status-layer">Layer {{ status.current_layer }}</span>
-        </div>
-      } @else {
-        <p class="empty">No focus events received yet.</p>
-      }
-    </div>
+    @if (!running && config.vendor_id === 0) {
+      <p class="status-hint">Select a keyboard above to enable the switcher.</p>
+    }
 
-    <div class="card-footer">
-      @if (!running) {
-        <button (click)="startSwitcher()" [disabled]="config.vendor_id === 0">
-          Start
-        </button>
-        @if (config.vendor_id === 0) {
-          <span class="hint">Select a keyboard first.</span>
-        }
-      } @else {
-        <button class="btn-danger" (click)="stopSwitcher()">Stop</button>
-      }
-    </div>
+    @if (status) {
+      <div class="focus-info">
+        <span class="focus-exe">{{ status.current_exe }}</span>
+        <span class="focus-layer">Layer {{ status.current_layer }}</span>
+      </div>
+    } @else if (running) {
+      <p class="status-hint">Waiting for focus event…</p>
+    }
   </section>
 
-</main>
+</div>

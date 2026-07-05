@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, NgZone, OnInit, OnDestroy } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -40,16 +40,21 @@ export class AppComponent implements OnInit, OnDestroy {
   running = false;
   status: SwitcherStatus | null = null;
   newRule: AppRule = { exe: "", layer: 0, label: "" };
-  saveError: string | null = null;
+  error: string | null = null;
 
   private unlisten?: UnlistenFn;
+
+  constructor(private ngZone: NgZone) {}
 
   async ngOnInit() {
     await this.loadDevices();
     this.config = await invoke<Config>("get_config");
     this.running = await invoke<boolean>("get_status");
+    // listen() fires outside Angular's zone — ngZone.run() triggers change detection
     this.unlisten = await listen<SwitcherStatus>("switcher-status", (e) => {
-      this.status = e.payload;
+      this.ngZone.run(() => {
+        this.status = e.payload;
+      });
     });
   }
 
@@ -74,9 +79,9 @@ export class AppComponent implements OnInit, OnDestroy {
   async saveConfig() {
     try {
       await invoke("save_config", { newConfig: this.config });
-      this.saveError = null;
+      this.error = null;
     } catch (e) {
-      this.saveError = String(e);
+      this.error = String(e);
     }
   }
 
@@ -96,18 +101,19 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await invoke("start_switcher");
       this.running = true;
+      this.error = null;
     } catch (e) {
-      this.saveError = String(e);
+      this.error = String(e);
     }
-  }
-
-  toHex(n: number): string {
-    return "0x" + n.toString(16).toUpperCase().padStart(4, "0");
   }
 
   async stopSwitcher() {
     await invoke("stop_switcher");
     this.running = false;
     this.status = null;
+  }
+
+  toHex(n: number): string {
+    return "0x" + n.toString(16).toUpperCase().padStart(4, "0");
   }
 }
