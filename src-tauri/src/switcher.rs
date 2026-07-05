@@ -104,13 +104,7 @@ pub fn run(
             if let Some(exe) = resolve_exe(hwnd) {
                 let (vid, pid, target_layer) = {
                     let cfg = config.lock().unwrap();
-                    let layer = cfg
-                        .rules
-                        .iter()
-                        .find(|r| r.exe.eq_ignore_ascii_case(&exe))
-                        .map(|r| r.layer)
-                        .unwrap_or(cfg.default_layer);
-                    (cfg.vendor_id, cfg.product_id, layer)
+                    (cfg.vendor_id, cfg.product_id, cfg.layer_for(&exe))
                 };
                 if vid != 0 && pid != 0 {
                     hid::send_layer(pid, vid, target_layer).ok();

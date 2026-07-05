@@ -102,13 +102,16 @@
         <span class="status-dot"></span>
         {{ running ? "Active" : "Inactive" }}
       </div>
-      <button
-        [class]="running ? 'btn-danger' : 'btn-primary'"
-        [disabled]="!running && config.vendor_id === 0"
-        (click)="running ? stopSwitcher() : startSwitcher()"
-      >
-        {{ running ? "Stop" : "Start" }}
-      </button>
+
+      @if (running) {
+        <button class="btn-danger" (click)="stopSwitcher()">Stop</button>
+      } @else {
+        <button
+          class="btn-primary"
+          [disabled]="config.vendor_id === 0"
+          (click)="startSwitcher()"
+        >Start</button>
+      }
     </div>
 
     @if (!running && config.vendor_id === 0) {
@@ -121,7 +124,7 @@
         <span class="focus-layer">Layer {{ status.current_layer }}</span>
       </div>
     } @else if (running) {
-      <p class="status-hint">Waiting for focus event…</p>
+      <p class="status-hint">Waiting for a window focus change…</p>
     }
   </section>
 
