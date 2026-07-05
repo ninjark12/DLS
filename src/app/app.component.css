@@ -440,3 +440,166 @@ input::placeholder { color: var(--overlay0); }
   border-radius: 6px;
   white-space: nowrap;
 }
+
+/* ── Firmware Setup card ─────────────────────── */
+.card-toggle {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  background: var(--crust);
+  /* inherit .card-head layout */
+}
+.card-toggle:hover:not(:disabled) {
+  background: var(--crust);
+  border: none;
+}
+
+.chevron {
+  color: var(--subtext0);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+.chevron.open { transform: rotate(90deg); }
+
+.firmware-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fw-intro {
+  font-size: 0.82rem;
+  color: var(--subtext0);
+  line-height: 1.55;
+}
+
+.fw-block {
+  border: 1px solid var(--surface0);
+  border-radius: 9px;
+  padding: 13px 14px;
+  background: var(--base);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fw-block-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.fw-note {
+  font-size: 0.8rem;
+  color: var(--subtext0);
+  line-height: 1.55;
+}
+
+.fw-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--surface1);
+  border-radius: 8px;
+  background: var(--mantle);
+}
+
+.fw-step-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.fw-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--crust);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.fw-done { color: var(--green); }
+.fw-done .fw-step-num { background: var(--green); }
+
+.fw-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fw-output {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: var(--crust);
+  border: 1px solid var(--surface0);
+  color: var(--subtext1);
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.fw-output-error {
+  border-color: var(--red-border);
+  background: var(--red-tint);
+  color: var(--red);
+}
+
+.fw-block-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--subtext1);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0;
+}
+.fw-block-toggle:hover:not(:disabled) {
+  background: transparent;
+  border: none;
+  color: var(--text);
+}
+
+.fw-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fw-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  color: var(--subtext0);
+  line-height: 1.6;
+}
+.fw-list li { margin-bottom: 3px; }
+
+.firmware-body code {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.76rem;
+  background: var(--surface0);
+  color: var(--lavender);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

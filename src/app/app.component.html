@@ -128,4 +128,102 @@
     }
   </section>
 
+  <!-- ── Firmware Setup ──────────────────────────── -->
+  <section class="card">
+    <button class="card-head card-toggle" (click)="firmwareOpen = !firmwareOpen">
+      <span class="card-label">Firmware Setup</span>
+      <span class="chevron" [class.open]="firmwareOpen">▸</span>
+    </button>
+
+    @if (firmwareOpen) {
+      <div class="firmware-body">
+        <p class="fw-intro">
+          One-time step: flash the layer-switch handler onto your keyboard.
+          Your VIA key remaps are stored on the board and are <strong>not</strong> erased.
+        </p>
+
+        <!-- (a) Iris LM-K one-click flash -->
+        <div class="fw-block">
+          <div class="fw-block-title">Keebio Iris LM-K — one-click flash</div>
+          <p class="fw-note">
+            This is a split keyboard, so each half is flashed separately.
+            On Windows, the first flash may prompt a one-time driver install (Zadig).
+          </p>
+
+          @if (flashStep === "idle") {
+            <button class="btn-primary" (click)="startFlashFlow()">Start flashing</button>
+          }
+
+          @if (flashStep === "left") {
+            <div class="fw-step">
+              <div class="fw-step-head"><span class="fw-step-num">1</span> Flash the LEFT half</div>
+              <p class="fw-note">
+                Connect only the <strong>left</strong> half, then press its reset button
+                (on the back of the PCB) to enter bootloader mode.
+              </p>
+              <div class="fw-actions">
+                <button class="btn-primary" [disabled]="flashing" (click)="flashHalf('right')">
+                  {{ flashing ? "Flashing…" : "Flash left half" }}
+                </button>
+                <button class="btn-ghost" [disabled]="flashing" (click)="resetFlashFlow()">Cancel</button>
+              </div>
+            </div>
+          }
+
+          @if (flashStep === "right") {
+            <div class="fw-step">
+              <div class="fw-step-head"><span class="fw-step-num">2</span> Flash the RIGHT half</div>
+              <p class="fw-note">
+                Now connect the <strong>right</strong> half and press its reset button.
+              </p>
+              <div class="fw-actions">
+                <button class="btn-primary" [disabled]="flashing" (click)="flashHalf('done')">
+                  {{ flashing ? "Flashing…" : "Flash right half" }}
+                </button>
+                <button class="btn-ghost" [disabled]="flashing" (click)="resetFlashFlow()">Cancel</button>
+              </div>
+            </div>
+          }
+
+          @if (flashStep === "done") {
+            <div class="fw-step">
+              <div class="fw-step-head fw-done"><span class="fw-step-num">✓</span> Both halves flashed</div>
+              <p class="fw-note">Reconnect your keyboard normally, then select it in the Keyboard card above.</p>
+              <button class="btn-ghost" (click)="resetFlashFlow()">Done</button>
+            </div>
+          }
+
+          @if (flashError) {
+            <pre class="fw-output fw-output-error">{{ flashError }}</pre>
+          } @else if (flashOutput) {
+            <pre class="fw-output">{{ flashOutput }}</pre>
+          }
+        </div>
+
+        <!-- (b) Generic fallback -->
+        <div class="fw-block">
+          <button class="fw-block-toggle" (click)="showOtherKeyboards = !showOtherKeyboards">
+            <span class="chevron" [class.open]="showOtherKeyboards">▸</span>
+            Using a different keyboard?
+          </button>
+
+          @if (showOtherKeyboards) {
+            <div class="fw-fallback">
+              <p class="fw-note">
+                This app works with <strong>any VIA-enabled keyboard</strong> once the
+                <code>via_command_kb</code> handler is compiled into its firmware.
+              </p>
+              <ol class="fw-list">
+                <li>Add the handler snippet (in <code>firmware/iris_lm_dls/keymap.c</code>) to your board's keymap.</li>
+                <li>Set <code>VIA_ENABLE = yes</code> in that keymap's <code>rules.mk</code>.</li>
+                <li>Build and flash it however you normally would (e.g. QMK Toolbox).</li>
+                <li>Select the board in the Keyboard card above and use the app normally.</li>
+              </ol>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </section>
+
 </div>

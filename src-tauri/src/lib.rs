@@ -1,4 +1,5 @@
 mod config;
+mod firmware;
 mod hid;
 mod switcher;
 
@@ -101,6 +102,7 @@ pub fn run() {
             start_switcher,
             stop_switcher,
             get_status,
+            firmware::flash_half,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

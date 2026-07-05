@@ -7,11 +7,20 @@
 use hidapi::HidApi;
 use serde::{Deserialize, Serialize};
 
-/// Raw HID command byte. Must match `DLS_CMD_SET_LAYER` in the QMK
-/// `raw_hid_receive_kb` handler. Chosen outside Via's reserved range
-/// (0x01-0x35) so Via forwards it to the keyboard-level fallback.
-const DLS_CMD_SET_LAYER: u8 = 0xE0;
-const PACKET_SIZE: usize = 32;
+/// Raw HID command byte. Must match `id_custom_set_layer` in the QMK
+/// `via_command_kb` handler. Chosen outside Via's own command range so our
+/// `via_command_kb` override can claim it before Via inspects the packet.
+const DLS_CMD_SET_LAYER: u8 = 0x77;
+
+/// QMK Raw HID endpoint payload size (RAW_EPSIZE). This is what the firmware
+/// actually receives in `data[0..32]`.
+const REPORT_SIZE: usize = 32;
+
+/// Host write buffer = report ID byte + payload. On Windows, hidapi treats
+/// byte 0 of the write buffer as the HID Report ID and strips it before the
+/// data reaches the device. QMK's raw endpoint has no report ID, so byte 0
+/// must be 0x00; the firmware then sees our command at data[0].
+const WRITE_SIZE: usize = REPORT_SIZE + 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyboardInfo {
@@ -20,12 +29,16 @@ pub struct KeyboardInfo {
     pub product_string: String,
 }
 
-/// Build the 32-byte Raw HID packet the firmware expects:
-///   byte 0 = command, byte 1 = target layer, rest zeroed.
-fn build_layer_packet(layer_number: u8) -> [u8; PACKET_SIZE] {
-    let mut packet = [0u8; PACKET_SIZE];
-    packet[0] = DLS_CMD_SET_LAYER;
-    packet[1] = layer_number;
+/// Build the host write buffer:
+///   byte 0 = 0x00 report ID (stripped by the OS HID stack)
+///   byte 1 = command (firmware sees this as data[0])
+///   byte 2 = target layer (firmware sees this as data[1])
+///   rest   = zero padding
+fn build_layer_packet(layer_number: u8) -> [u8; WRITE_SIZE] {
+    let mut packet = [0u8; WRITE_SIZE];
+    packet[0] = 0x00; // HID report ID
+    packet[1] = DLS_CMD_SET_LAYER;
+    packet[2] = layer_number;
     packet
 }
 
@@ -77,29 +90,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn packet_has_correct_command_byte() {
+    fn packet_leads_with_zero_report_id() {
+        // Windows hidapi strips byte 0 as the HID report ID; it must be 0x00.
+        assert_eq!(build_layer_packet(3)[0], 0x00);
+    }
+
+    #[test]
+    fn command_byte_follows_report_id() {
         let packet = build_layer_packet(3);
-        assert_eq!(packet[0], DLS_CMD_SET_LAYER);
-        assert_eq!(packet[0], 0xE0);
+        assert_eq!(packet[1], DLS_CMD_SET_LAYER);
+        assert_eq!(packet[1], 0x77);
     }
 
     #[test]
-    fn packet_carries_target_layer() {
-        assert_eq!(build_layer_packet(0)[1], 0);
-        assert_eq!(build_layer_packet(7)[1], 7);
-        assert_eq!(build_layer_packet(255)[1], 255);
+    fn target_layer_follows_command() {
+        assert_eq!(build_layer_packet(0)[2], 0);
+        assert_eq!(build_layer_packet(7)[2], 7);
+        assert_eq!(build_layer_packet(255)[2], 255);
     }
 
     #[test]
-    fn packet_is_32_bytes_and_padded_with_zeros() {
+    fn write_buffer_is_report_id_plus_full_payload() {
         let packet = build_layer_packet(5);
-        assert_eq!(packet.len(), 32);
-        assert!(packet[2..].iter().all(|&b| b == 0));
-    }
-
-    #[test]
-    fn command_byte_is_outside_via_reserved_range() {
-        // Via reserves 0x01-0x35 for its own protocol commands.
-        assert!(DLS_CMD_SET_LAYER > 0x35);
+        assert_eq!(packet.len(), 33); // 1 report ID + 32-byte RAW_EPSIZE payload
+        assert!(packet[3..].iter().all(|&b| b == 0));
     }
 }

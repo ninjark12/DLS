@@ -42,6 +42,14 @@ export class AppComponent implements OnInit, OnDestroy {
   newRule: AppRule = { exe: "", layer: 0, label: "" };
   error: string | null = null;
 
+  // ── Firmware Setup card ──
+  firmwareOpen = false;
+  showOtherKeyboards = false;
+  flashStep: "idle" | "left" | "right" | "done" = "idle";
+  flashing = false;
+  flashOutput: string | null = null;
+  flashError: string | null = null;
+
   private unlisten?: UnlistenFn;
 
   constructor(private ngZone: NgZone) {}
@@ -115,5 +123,34 @@ export class AppComponent implements OnInit, OnDestroy {
 
   toHex(n: number): string {
     return "0x" + n.toString(16).toUpperCase().padStart(4, "0");
+  }
+
+  // ── Firmware flashing ──
+  startFlashFlow() {
+    this.flashStep = "left";
+    this.flashOutput = null;
+    this.flashError = null;
+  }
+
+  resetFlashFlow() {
+    this.flashStep = "idle";
+    this.flashing = false;
+    this.flashOutput = null;
+    this.flashError = null;
+  }
+
+  /** Flash whichever half is currently connected + in bootloader mode. */
+  async flashHalf(next: "right" | "done") {
+    this.flashing = true;
+    this.flashOutput = null;
+    this.flashError = null;
+    try {
+      this.flashOutput = await invoke<string>("flash_half");
+      this.flashStep = next;
+    } catch (e) {
+      this.flashError = String(e);
+    } finally {
+      this.flashing = false;
+    }
   }
 }
