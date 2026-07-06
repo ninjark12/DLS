@@ -1,0 +1,52 @@
+name: Release
+
+# Builds the Windows installer and attaches it to a GitHub Release.
+# Trigger by pushing a version tag, e.g.:
+#   git tag v0.1.0 && git push origin v0.1.0
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build app and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Uses the pushed tag; runs `tauri build` (which runs `bun run build`
+          # via beforeBuildCommand) and uploads the .msi/.exe installers.
+          tagName: ${{ github.ref_name }}
+          releaseName: "Dynamic Layer Switcher ${{ github.ref_name }}"
+          releaseBody: |
+            Windows installer for Dynamic Layer Switcher.
+
+            After installing, complete the one-time firmware setup (see README)
+            so your keyboard can receive layer commands.
+          releaseDraft: true
+          prerelease: false
