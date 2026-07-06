@@ -42,13 +42,18 @@ fn build_layer_packet(layer_number: u8) -> [u8; WRITE_SIZE] {
     packet
 }
 
+/// QMK's Raw HID interface advertises this usage page. A VIA keyboard is a
+/// composite USB device with several HID interfaces (keyboard, consumer, raw);
+/// only the one on this usage page routes to `raw_hid_receive` in firmware.
+const QMK_USAGE_PAGE: u16 = 0xFF60;
+
 pub fn list_keyboards() -> Vec<KeyboardInfo> {
     let mut keyboards: Vec<KeyboardInfo> = Vec::new();
     let api = HidApi::new();
     match api {
         Ok(api) => {
             for device in api.device_list() {
-                if device.usage_page() != 0xFF60 {
+                if device.usage_page() != QMK_USAGE_PAGE {
                     continue;
                 }
                 keyboards.push(KeyboardInfo {
@@ -71,18 +76,25 @@ pub fn send_layer(
     current_keyboard_vid: u16,
     layer_number: u8,
 ) -> Result<(), String> {
-    let api = HidApi::new();
-    match api {
-        Ok(api) => {
-            let device = api
-                .open(current_keyboard_vid, current_keyboard_pid)
-                .map_err(|e| e.to_string())?;
-            let packet = build_layer_packet(layer_number);
-            device.write(&packet).map_err(|e| e.to_string())?;
-            Ok(())
-        }
-        Err(e) => return Err(e.to_string()),
-    }
+    let api = HidApi::new().map_err(|e| e.to_string())?;
+
+    // Open the Raw HID interface specifically (usage page 0xFF60) by its
+    // device path — NOT api.open(vid, pid), which grabs the first matching
+    // interface (usually the plain keyboard endpoint) and silently goes
+    // nowhere. This is the interface `raw_hid_receive`/`via_command_kb` reads.
+    let info = api
+        .device_list()
+        .find(|d| {
+            d.vendor_id() == current_keyboard_vid
+                && d.product_id() == current_keyboard_pid
+                && d.usage_page() == QMK_USAGE_PAGE
+        })
+        .ok_or_else(|| "Raw HID interface (usage page 0xFF60) not found".to_string())?;
+
+    let device = info.open_device(&api).map_err(|e| e.to_string())?;
+    let packet = build_layer_packet(layer_number);
+    device.write(&packet).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[cfg(test)]
