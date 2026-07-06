@@ -42,6 +42,12 @@ export class AppComponent implements OnInit, OnDestroy {
   newRule: AppRule = { exe: "", layer: 0, label: "" };
   error: string | null = null;
 
+  // ── Save Rules button state ──
+  rulesDirty = false;   // enable the button only after an inline edit
+  rulesSaving = false;
+  rulesSaved = false;   // show the "✓ Saved" confirmation briefly
+  private savedTimer?: ReturnType<typeof setTimeout>;
+
   // ── Firmware Setup card ──
   firmwareOpen = false;
   showOtherKeyboards = false;
@@ -68,6 +74,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.unlisten?.();
+    if (this.savedTimer) clearTimeout(this.savedTimer);
   }
 
   async loadDevices() {
@@ -84,12 +91,33 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.saveConfig();
   }
 
-  async saveConfig() {
+  async saveConfig(): Promise<boolean> {
     try {
       await invoke("save_config", { newConfig: this.config });
       this.error = null;
+      this.rulesDirty = false; // any successful save persists the whole config
+      return true;
     } catch (e) {
       this.error = String(e);
+      return false;
+    }
+  }
+
+  /** Called on every inline edit to a rule cell — arms the Save button. */
+  markRulesDirty() {
+    this.rulesDirty = true;
+    this.rulesSaved = false; // a new edit invalidates the old confirmation
+    if (this.savedTimer) clearTimeout(this.savedTimer);
+  }
+
+  /** Save via the button: persist, confirm, then disarm the button again. */
+  async saveRules() {
+    this.rulesSaving = true;
+    const ok = await this.saveConfig();
+    this.rulesSaving = false;
+    if (ok) {
+      this.rulesSaved = true;
+      this.savedTimer = setTimeout(() => (this.rulesSaved = false), 2500);
     }
   }
 

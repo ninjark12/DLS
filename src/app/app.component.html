@@ -70,9 +70,9 @@
         }
         @for (rule of config.rules; track $index) {
           <tr class="rule-row">
-            <td><input class="input-cell" [(ngModel)]="rule.label"  placeholder="Label"   /></td>
-            <td><input class="input-cell" [(ngModel)]="rule.exe"    placeholder="app.exe" /></td>
-            <td><input class="input-cell input-layer" type="number" min="0" max="31" [(ngModel)]="rule.layer" /></td>
+            <td><input class="input-cell" [(ngModel)]="rule.label" (ngModelChange)="markRulesDirty()" placeholder="Label"   /></td>
+            <td><input class="input-cell" [(ngModel)]="rule.exe"   (ngModelChange)="markRulesDirty()" placeholder="app.exe" /></td>
+            <td><input class="input-cell input-layer" type="number" min="0" max="31" [(ngModel)]="rule.layer" (ngModelChange)="markRulesDirty()" /></td>
             <td class="col-delete">
               <button class="btn-delete" (click)="removeRule($index)" title="Delete rule">×</button>
             </td>
@@ -89,8 +89,15 @@
     </div>
 
     @if (config.rules.length > 0) {
-      <div class="card-foot">
-        <button class="btn-primary" (click)="saveConfig()">Save Rules</button>
+      <div class="card-foot save-foot">
+        <button
+          class="btn-primary"
+          [disabled]="!rulesDirty || rulesSaving"
+          (click)="saveRules()"
+        >{{ rulesSaving ? "Saving…" : "Save Rules" }}</button>
+        @if (rulesSaved) {
+          <span class="save-confirm">✓ Saved</span>
+        }
       </div>
     }
   </section>
