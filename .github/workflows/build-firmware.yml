@@ -1,0 +1,66 @@
+name: Build Iris LM-K firmware
+
+# Produces the precompiled `.bin` the app bundles as
+# src-tauri/resources/iris_lm_dls.bin (Phase B). Runs in the official QMK CLI
+# container, which already has the ARM (arm-none-eabi-gcc) toolchain for the
+# STM32G431. No local toolchain needed — trigger from the Actions tab, then
+# download the artifact and drop it into src-tauri/resources/.
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "firmware/iris_lm_dls/**"
+      - ".github/workflows/build-firmware.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli
+    steps:
+      - name: Checkout DLS repo (firmware scaffold)
+        uses: actions/checkout@v4
+        with:
+          path: dls
+
+      - name: Clone QMK firmware + submodules
+        run: |
+          git clone --depth 1 https://github.com/qmk/qmk_firmware.git
+          cd qmk_firmware
+          make git-submodule
+
+      - name: Assemble the dls keymap
+        run: |
+          cd qmk_firmware
+          KM=keyboards/keebio/iris_lm/keymaps/dls
+          # Start from the stock keymap (has the layout array + base includes)...
+          cp -r keyboards/keebio/iris_lm/keymaps/default "$KM"
+          # ...then append our via_command_kb handler and enable VIA.
+          cat ../dls/firmware/iris_lm_dls/keymap.c >> "$KM/keymap.c"
+          cat ../dls/firmware/iris_lm_dls/rules.mk >> "$KM/rules.mk"
+          echo "----- assembled $KM/rules.mk -----"
+          cat "$KM/rules.mk"
+
+      - name: Compile
+        run: |
+          cd qmk_firmware
+          qmk compile -kb keebio/iris_lm/k1 -km dls
+
+      - name: Collect firmware
+        run: |
+          cd qmk_firmware
+          # QMK names output <keyboard-with-underscores>_<keymap>.bin
+          SRC="$(find . -maxdepth 2 -name 'keebio_iris_lm_k1_dls.bin' | head -n1)"
+          if [ -z "$SRC" ]; then
+            echo "Build did not produce a .bin"; find . -name '*.bin'; exit 1
+          fi
+          mkdir -p out
+          cp "$SRC" out/iris_lm_dls.bin
+          ls -l out/
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iris_lm_dls-bin
+          path: qmk_firmware/out/iris_lm_dls.bin
+          if-no-files-found: error
