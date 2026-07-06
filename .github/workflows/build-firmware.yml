@@ -38,8 +38,12 @@ jobs:
           # ...then append our via_command_kb handler and enable VIA.
           cat ../dls/firmware/iris_lm_dls/keymap.c >> "$KM/keymap.c"
           cat ../dls/firmware/iris_lm_dls/rules.mk >> "$KM/rules.mk"
+          # ...and add our config.h (raises DYNAMIC_KEYMAP_LAYER_COUNT).
+          cat ../dls/firmware/iris_lm_dls/config.h >> "$KM/config.h"
           echo "----- assembled $KM/rules.mk -----"
           cat "$KM/rules.mk"
+          echo "----- assembled $KM/config.h -----"
+          cat "$KM/config.h"
 
       - name: Compile
         run: |

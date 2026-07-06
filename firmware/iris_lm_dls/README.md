@@ -26,7 +26,10 @@ the desktop app move the active layer over Raw HID, without breaking the VIA app
    default keymap.)
 3. Copy `rules.mk` from this folder into the same `dls/` directory (adds
    `VIA_ENABLE = yes`).
-4. Build:
+4. Append `config.h` from this folder to `dls/config.h` (raises
+   `DYNAMIC_KEYMAP_LAYER_COUNT` to 8 so VIA exposes 8 layers). `cat >>` creates
+   the file if the stock keymap doesn't already have one.
+5. Build:
    ```
    qmk compile -kb keebio/iris_lm/k1 -km dls
    ```
